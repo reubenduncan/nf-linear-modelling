@@ -1,0 +1,275 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/reubenduncan/ecologyflow/blob/main/projects/linear-modelling/nextflow-schema.json",
+    "title": "Linear Modelling of Microbiome Data",
+    "description": "Nextflow pipeline for CODA-GLMNET penalized regression and best-subset regression on microbiome feature tables.",
+    "type": "object",
+    "definitions": {
+        "input_output_options": {
+            "title": "Input / Output Options",
+            "type": "object",
+            "description": "Paths to input data and output directory.",
+            "properties": {
+                "feature_table": {
+                    "type": "string",
+                    "description": "Path to feature table. Supported formats: BIOM (.biom), TSV (.tsv/.txt), or GTDB taxonomy-annotated TSV.",
+                    "format": "file-path",
+                    "exists": true,
+                    "fa_icon": "fas fa-file"
+                },
+                "meta_table": {
+                    "type": "string",
+                    "description": "Path to sample metadata CSV. First column must be sample IDs.",
+                    "format": "file-path",
+                    "exists": true,
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "taxonomy_table": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to taxonomy TSV (required for tsv/gtdb input formats). First column: featureID; second column: semicolon-separated taxonomy string.",
+                    "format": "file-path",
+                    "fa_icon": "fas fa-sitemap"
+                },
+                "input_format": {
+                    "type": "string",
+                    "default": "biom",
+                    "enum": ["biom", "tsv", "gtdb"],
+                    "description": "Format of the feature table. 'biom': QIIME2/BIOM format. 'tsv': tab-separated with QIIME2-style prefixes. 'gtdb': tab-separated with GTDB-style prefixes.",
+                    "fa_icon": "fas fa-file-import"
+                },
+                "output_dir": {
+                    "type": "string",
+                    "default": "${projectDir}/results",
+                    "description": "Directory where all output CSVs will be written.",
+                    "format": "directory-path",
+                    "fa_icon": "fas fa-folder-open"
+                },
+                "scripts_dir": {
+                    "type": "string",
+                    "default": "/opt/ecology-scripts",
+                    "description": "Path to the R scripts directory inside the container.",
+                    "fa_icon": "fas fa-code"
+                },
+                "label": {
+                    "type": "string",
+                    "default": "analysis",
+                    "description": "Label prefix applied to all output file names.",
+                    "fa_icon": "fas fa-tag"
+                }
+            },
+            "required": ["feature_table", "meta_table"]
+        },
+        "filtering_options": {
+            "title": "Filtering Options",
+            "type": "object",
+            "description": "Parameters for filtering samples and features before modelling.",
+            "properties": {
+                "min_library_size": {
+                    "type": "integer",
+                    "default": 5000,
+                    "minimum": 1,
+                    "description": "Minimum sequencing depth (library size) required per sample. Samples below this threshold are removed.",
+                    "fa_icon": "fas fa-filter"
+                },
+                "exclude_column": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Metadata column name used to filter out samples. Used together with exclude_values.",
+                    "fa_icon": "fas fa-minus-circle"
+                },
+                "exclude_values": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Comma-separated list of values in exclude_column that should be removed from the dataset.",
+                    "fa_icon": "fas fa-ban"
+                }
+            }
+        },
+        "grouping_options": {
+            "title": "Grouping Options",
+            "type": "object",
+            "description": "Parameters defining how samples are split into groups for per-group modelling.",
+            "properties": {
+                "groups_column": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Metadata column that defines the grouping variable. Each unique value becomes a separate group for modelling. If empty and groups_paste_columns is empty, all samples are treated as one group ('All').",
+                    "fa_icon": "fas fa-object-group"
+                },
+                "groups_paste_columns": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Comma-separated list of metadata columns to concatenate (paste) to form the grouping variable. Takes precedence over groups_column if set.",
+                    "fa_icon": "fas fa-columns"
+                }
+            }
+        },
+        "coda_glmnet_options": {
+            "title": "CODA-GLMNET Options",
+            "type": "object",
+            "description": "Parameters controlling CODA-GLMNET penalized regression.",
+            "properties": {
+                "coda_which_level": {
+                    "type": "string",
+                    "default": "Otus",
+                    "enum": ["Otus", "Genus", "Family", "Order", "Class", "Phylum", "Kingdom"],
+                    "description": "Taxonomy level to aggregate features to before modelling.",
+                    "fa_icon": "fas fa-layer-group"
+                },
+                "coda_normalisation": {
+                    "type": "string",
+                    "default": "TSS+CLR",
+                    "enum": ["TSS+CLR", "TSS+ILR", "logrelative"],
+                    "description": "Normalisation method applied to the feature table before CODA-GLMNET. TSS+CLR (recommended for compositional data): total-sum scaling then centered log-ratio. TSS+ILR: isometric log-ratio. logrelative: log relative abundance.",
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "coda_occupancy": {
+                    "type": "integer",
+                    "default": 1,
+                    "minimum": 1,
+                    "description": "Minimum number of samples a feature must be present in (occupancy filter). Features present in fewer samples are removed.",
+                    "fa_icon": "fas fa-percentage"
+                },
+                "coda_top_n": {
+                    "type": "integer",
+                    "default": 100,
+                    "minimum": 3,
+                    "description": "Retain only the top N most abundant features (by total count across samples) for modelling.",
+                    "fa_icon": "fas fa-sort-amount-down"
+                },
+                "coda_lambda": {
+                    "type": "string",
+                    "default": "lambda.min",
+                    "enum": ["lambda.min", "lambda.1se"],
+                    "description": "GLMNET regularization parameter selection. 'lambda.min': minimize cross-validation error (less penalization, more features). 'lambda.1se': within one standard error of minimum (more penalization, sparser model).",
+                    "fa_icon": "fas fa-compress-arrows-alt"
+                },
+                "coda_alpha": {
+                    "type": "number",
+                    "default": 1.0,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "GLMNET mixing parameter. 0 = ridge regression (L2 penalty). 1 = lasso (L1 penalty, default). 0.5 = elastic net (mix of L1 and L2).",
+                    "fa_icon": "fas fa-balance-scale"
+                },
+                "coda_binary_outcome": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, auto-detect binary covariates and fit a logistic CODA-GLMNET. If false, all covariates are treated as continuous.",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "coda_groups_paste_columns": {
+                    "type": "string",
+                    "default": "",
+                    "description": "CODA-GLMNET specific override for groups_paste_columns.",
+                    "fa_icon": "fas fa-columns"
+                },
+                "environmental_covariates": {
+                    "type": "string",
+                    "default": "",
+                    "description": "REQUIRED. Comma-separated list of metadata column names to use as response variables in CODA-GLMNET models. A separate model is fitted per group × covariate combination.",
+                    "fa_icon": "fas fa-leaf"
+                },
+                "covariates_global": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, fit a single model across all samples combined rather than per group. Useful when group sample sizes are too small for per-group modelling.",
+                    "fa_icon": "fas fa-globe"
+                }
+            },
+            "required": ["environmental_covariates"]
+        },
+        "output_options": {
+            "title": "Output Options",
+            "type": "object",
+            "fa_icon": "fas fa-file-export",
+            "description": "Additional output formats produced after all analyses complete.",
+            "properties": {
+                "merge_parquet": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Merge all output CSVs into a single Parquet file with analysis and table metadata columns.",
+                    "help_text": "Writes linear_modelling_{label}.parquet to output_dir. Filter by 'analysis' and 'table' columns downstream.",
+                    "fa_icon": "fas fa-file-archive"
+                }
+            }
+        },
+        "subset_regression_options": {
+            "title": "Subset Regression Options",
+            "type": "object",
+            "description": "Parameters controlling best-subset regression (via leaps).",
+            "properties": {
+                "dependent_csv": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to CSV file containing the dependent variable (e.g., alpha diversity metrics output). Leave empty to read the dependent variable from meta_table instead (set dependent_source='metadata').",
+                    "format": "file-path",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "dependent_variable": {
+                    "type": "string",
+                    "default": "Shannon",
+                    "description": "Column name of the dependent (response) variable. Must exist in dependent_csv (if dependent_source=csv) or meta_table (if dependent_source=metadata).",
+                    "fa_icon": "fas fa-bullseye"
+                },
+                "dependent_source": {
+                    "type": "string",
+                    "default": "csv",
+                    "enum": ["csv", "metadata"],
+                    "description": "Source for the dependent variable. 'csv': read from dependent_csv file (e.g. alpha diversity pipeline output). 'metadata': read directly from a column in meta_table.",
+                    "fa_icon": "fas fa-database"
+                },
+                "explanatory_variables": {
+                    "type": "string",
+                    "default": "",
+                    "description": "REQUIRED. Comma-separated list of metadata column names to use as candidate predictors in subset regression.",
+                    "fa_icon": "fas fa-list-ul"
+                },
+                "regression_method": {
+                    "type": "string",
+                    "default": "forward",
+                    "enum": ["exhaustive", "backward", "forward", "seqrep"],
+                    "description": "Subset selection algorithm passed to regsubsets(). 'exhaustive': all 2^p subsets (use only for small p). 'forward': sequential addition. 'backward': sequential removal. 'seqrep': sequential replacement.",
+                    "fa_icon": "fas fa-search"
+                },
+                "test_method": {
+                    "type": "string",
+                    "default": "cv",
+                    "enum": ["cv", "aic", "bic"],
+                    "description": "Criterion for selecting the best model size. 'cv': k-fold cross-validation RMSE (use cv_folds to set k). 'aic': Akaike Information Criterion. 'bic': Bayesian Information Criterion.",
+                    "fa_icon": "fas fa-ruler"
+                },
+                "cv_folds": {
+                    "type": "integer",
+                    "default": 5,
+                    "minimum": 2,
+                    "maximum": 20,
+                    "description": "Number of folds for cross-validation (only used when test_method='cv').",
+                    "fa_icon": "fas fa-th"
+                },
+                "scale_predictors": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "If true, standardize (z-score) all numeric predictors before subset regression. Recommended for comparing coefficients across variables on different scales.",
+                    "fa_icon": "fas fa-compress"
+                },
+                "really_big": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Pass really.big=TRUE to regsubsets(). Required when the number of predictors is large (>50) and regression_method='exhaustive'. Use with caution — computation time grows exponentially.",
+                    "fa_icon": "fas fa-exclamation-triangle"
+                }
+            },
+            "required": ["explanatory_variables"]
+        }
+    },
+    "allOf": [
+        { "$ref": "#/definitions/input_output_options" },
+        { "$ref": "#/definitions/filtering_options" },
+        { "$ref": "#/definitions/grouping_options" },
+        { "$ref": "#/definitions/coda_glmnet_options" },
+        { "$ref": "#/definitions/subset_regression_options" },
+        { "$ref": "#/definitions/output_options" }
+    ]
+}

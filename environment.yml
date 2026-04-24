@@ -1,0 +1,23 @@
+name: ecologyflow-lm
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - r-base >=4.2.0
+  - nextflow >=23.04
+
+  # CRAN packages
+  - r-optparse
+  - r-leaps
+  - r-dplyr
+  - r-caret
+  - r-purrr
+  - r-stringr
+  - r-coda4microbiome
+
+  # Bioconductor packages
+  - bioconductor-phyloseq
+  - bioconductor-mixomics
+  - r-arrow
