@@ -34,7 +34,11 @@
                 "input_format": {
                     "type": "string",
                     "default": "biom",
-                    "enum": ["biom", "tsv", "gtdb"],
+                    "enum": [
+                        "biom",
+                        "tsv",
+                        "gtdb"
+                    ],
                     "description": "Format of the feature table. 'biom': QIIME2/BIOM format. 'tsv': tab-separated with QIIME2-style prefixes. 'gtdb': tab-separated with GTDB-style prefixes.",
                     "fa_icon": "fas fa-file-import"
                 },
@@ -45,12 +49,6 @@
                     "format": "directory-path",
                     "fa_icon": "fas fa-folder-open"
                 },
-                "scripts_dir": {
-                    "type": "string",
-                    "default": "/opt/ecology-scripts",
-                    "description": "Path to the R scripts directory inside the container.",
-                    "fa_icon": "fas fa-code"
-                },
                 "label": {
                     "type": "string",
                     "default": "analysis",
@@ -58,7 +56,10 @@
                     "fa_icon": "fas fa-tag"
                 }
             },
-            "required": ["feature_table", "meta_table"]
+            "required": [
+                "feature_table",
+                "meta_table"
+            ]
         },
         "filtering_options": {
             "title": "Filtering Options",
@@ -110,17 +111,29 @@
             "type": "object",
             "description": "Parameters controlling CODA-GLMNET penalized regression.",
             "properties": {
-                "coda_which_level": {
+                "coda_taxon_rank": {
                     "type": "string",
-                    "default": "Otus",
-                    "enum": ["Otus", "Genus", "Family", "Order", "Class", "Phylum", "Kingdom"],
+                    "default": "Feature",
+                    "enum": [
+                        "Feature",
+                        "Genus",
+                        "Family",
+                        "Order",
+                        "Class",
+                        "Phylum",
+                        "Kingdom"
+                    ],
                     "description": "Taxonomy level to aggregate features to before modelling.",
                     "fa_icon": "fas fa-layer-group"
                 },
                 "coda_normalisation": {
                     "type": "string",
                     "default": "TSS+CLR",
-                    "enum": ["TSS+CLR", "TSS+ILR", "logrelative"],
+                    "enum": [
+                        "TSS+CLR",
+                        "TSS+ILR",
+                        "logrelative"
+                    ],
                     "description": "Normalisation method applied to the feature table before CODA-GLMNET. TSS+CLR (recommended for compositional data): total-sum scaling then centered log-ratio. TSS+ILR: isometric log-ratio. logrelative: log relative abundance.",
                     "fa_icon": "fas fa-sliders-h"
                 },
@@ -141,7 +154,10 @@
                 "coda_lambda": {
                     "type": "string",
                     "default": "lambda.min",
-                    "enum": ["lambda.min", "lambda.1se"],
+                    "enum": [
+                        "lambda.min",
+                        "lambda.1se"
+                    ],
                     "description": "GLMNET regularization parameter selection. 'lambda.min': minimize cross-validation error (less penalization, more features). 'lambda.1se': within one standard error of minimum (more penalization, sparser model).",
                     "fa_icon": "fas fa-compress-arrows-alt"
                 },
@@ -168,7 +184,7 @@
                 "environmental_covariates": {
                     "type": "string",
                     "default": "",
-                    "description": "REQUIRED. Comma-separated list of metadata column names to use as response variables in CODA-GLMNET models. A separate model is fitted per group × covariate combination.",
+                    "description": "REQUIRED. Comma-separated list of metadata column names to use as response variables in CODA-GLMNET models. A separate model is fitted per group \u00d7 covariate combination.",
                     "fa_icon": "fas fa-leaf"
                 },
                 "covariates_global": {
@@ -178,7 +194,9 @@
                     "fa_icon": "fas fa-globe"
                 }
             },
-            "required": ["environmental_covariates"]
+            "required": [
+                "environmental_covariates"
+            ]
         },
         "output_options": {
             "title": "Output Options",
@@ -216,7 +234,10 @@
                 "dependent_source": {
                     "type": "string",
                     "default": "csv",
-                    "enum": ["csv", "metadata"],
+                    "enum": [
+                        "csv",
+                        "metadata"
+                    ],
                     "description": "Source for the dependent variable. 'csv': read from dependent_csv file (e.g. alpha diversity pipeline output). 'metadata': read directly from a column in meta_table.",
                     "fa_icon": "fas fa-database"
                 },
@@ -229,14 +250,23 @@
                 "regression_method": {
                     "type": "string",
                     "default": "forward",
-                    "enum": ["exhaustive", "backward", "forward", "seqrep"],
+                    "enum": [
+                        "exhaustive",
+                        "backward",
+                        "forward",
+                        "seqrep"
+                    ],
                     "description": "Subset selection algorithm passed to regsubsets(). 'exhaustive': all 2^p subsets (use only for small p). 'forward': sequential addition. 'backward': sequential removal. 'seqrep': sequential replacement.",
                     "fa_icon": "fas fa-search"
                 },
                 "test_method": {
                     "type": "string",
                     "default": "cv",
-                    "enum": ["cv", "aic", "bic"],
+                    "enum": [
+                        "cv",
+                        "aic",
+                        "bic"
+                    ],
                     "description": "Criterion for selecting the best model size. 'cv': k-fold cross-validation RMSE (use cv_folds to set k). 'aic': Akaike Information Criterion. 'bic': Bayesian Information Criterion.",
                     "fa_icon": "fas fa-ruler"
                 },
@@ -257,19 +287,33 @@
                 "really_big": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Pass really.big=TRUE to regsubsets(). Required when the number of predictors is large (>50) and regression_method='exhaustive'. Use with caution — computation time grows exponentially.",
+                    "description": "Pass really.big=TRUE to regsubsets(). Required when the number of predictors is large (>50) and regression_method='exhaustive'. Use with caution \u2014 computation time grows exponentially.",
                     "fa_icon": "fas fa-exclamation-triangle"
                 }
             },
-            "required": ["explanatory_variables"]
+            "required": [
+                "explanatory_variables"
+            ]
         }
     },
     "allOf": [
-        { "$ref": "#/definitions/input_output_options" },
-        { "$ref": "#/definitions/filtering_options" },
-        { "$ref": "#/definitions/grouping_options" },
-        { "$ref": "#/definitions/coda_glmnet_options" },
-        { "$ref": "#/definitions/subset_regression_options" },
-        { "$ref": "#/definitions/output_options" }
+        {
+            "$ref": "#/definitions/input_output_options"
+        },
+        {
+            "$ref": "#/definitions/filtering_options"
+        },
+        {
+            "$ref": "#/definitions/grouping_options"
+        },
+        {
+            "$ref": "#/definitions/coda_glmnet_options"
+        },
+        {
+            "$ref": "#/definitions/subset_regression_options"
+        },
+        {
+            "$ref": "#/definitions/output_options"
+        }
     ]
 }

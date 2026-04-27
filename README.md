@@ -37,7 +37,6 @@ nextflow run main.nf \
 | `--taxonomy_table` | `""` | Taxonomy TSV (required for `tsv`/`gtdb` input formats) |
 | `--input_format` | `biom` | `biom` \| `tsv` \| `gtdb` |
 | `--output_dir` | `results/` | Directory for output files |
-| `--scripts_dir` | `/opt/ecology-scripts` | Path to R scripts (override for local runs) |
 | `--label` | `analysis` | Label prepended to all output file names |
 
 ### Filtering
@@ -60,7 +59,7 @@ nextflow run main.nf \
 | Parameter | Default | Description |
 |---|---|---|
 | `--environmental_covariates` | *(required)* | Comma-separated metadata columns to use as response variables |
-| `--coda_which_level` | `Otus` | Taxonomic level for feature aggregation |
+| `--coda_taxon_rank` | `Feature` | Taxonomic level for feature aggregation |
 | `--coda_normalisation` | `TSS+CLR` | Normalisation: `TSS+CLR` \| `TSS+ILR` \| `logrelative` |
 | `--coda_occupancy` | `1` | Minimum number of samples a feature must appear in |
 | `--coda_top_n` | `100` | Retain only the top N most abundant features |
@@ -119,14 +118,18 @@ Files are written to subdirectories of `--output_dir`.
 ## Requirements
 
 - [Nextflow](https://www.nextflow.io/) ≥ 23.04
-- Docker (default) **or** a local R installation with: `optparse`, `leaps`, `dplyr`, `caret`, `purrr`, `stringr`, `coda4microbiome`, `phyloseq`, `mixOmics`, `arrow`
+- [conda](https://docs.conda.io/) or [mamba](https://mamba.readthedocs.io/) (default executor — environment built automatically from `environment.yml`)
+- **or** Docker with `-profile docker`
+- **or** Singularity with `-profile singularity`
+- **or** a local R installation with: `optparse`, `leaps`, `dplyr`, `caret`, `purrr`, `stringr`, `coda4microbiome`, `phyloseq`, `mixOmics`, `arrow`
 
-## Running without Docker
+## Running with a local R installation
+
+Add `-profile` to select your execution environment (conda is used by default if no profile is specified):
 
 ```bash
 nextflow run main.nf \
   -c nextflow.config \
-  --scripts_dir              "$(pwd)" \
   --feature_table            /path/to/table.biom \
   --meta_table               /path/to/meta.csv \
   --groups_column            Treatment \
@@ -136,3 +139,5 @@ nextflow run main.nf \
   --dependent_source         metadata \
   --label                    my_analysis
 ```
+
+Available profiles: `conda` (default), `docker`, `singularity`.

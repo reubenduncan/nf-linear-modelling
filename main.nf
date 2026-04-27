@@ -32,12 +32,12 @@ process CODA_GLMNET {
     def binary_flag = params.coda_binary_outcome ? '--coda_binary_outcome' : ''
 
     """
-    Rscript ${params.scripts_dir}/src/R/lm_coda_glmnet.R \\
+    Rscript ${projectDir}/src/R/lm_coda_glmnet.R \\
         --feature_table       "${feature_table}" \\
         --meta_table          "${meta_table}" \\
         --input_format        "${params.input_format}" \\
         --output_dir          "." \\
-        --which_level         "${params.coda_which_level}" \\
+        --taxon_rank         "${params.coda_taxon_rank}" \\
         --label               "${params.label}" \\
         --min_library_size    ${params.min_library_size} \\
         --normalisation_method "${params.coda_normalisation}" \\
@@ -75,7 +75,7 @@ process SUBSET_REGRESSION {
     def big_flag   = params.really_big       ? '--really_big' : ''
 
     """
-    Rscript ${params.scripts_dir}/src/R/subset_regression.R \\
+    Rscript ${projectDir}/src/R/subset_regression.R \\
         --meta_table          "${meta_table}" \\
         --dependent_csv       "${dependent_csv}" \\
         --dependent_source    "csv" \\
@@ -109,7 +109,7 @@ process SUBSET_REGRESSION_FROM_META {
     def big_flag   = params.really_big       ? '--really_big' : ''
 
     """
-    Rscript ${params.scripts_dir}/src/R/subset_regression.R \\
+    Rscript ${projectDir}/src/R/subset_regression.R \\
         --meta_table          "${meta_table}" \\
         --dependent_source    "metadata" \\
         --output_dir          "." \\
@@ -139,7 +139,7 @@ process MERGE_PARQUET {
 
     script:
     """
-    Rscript ${params.scripts_dir}/src/R/merge_parquet.R \\
+    Rscript ${projectDir}/src/R/merge_parquet.R \\
         --label      '${params.label}' \\
         --output_dir '.'
     """

@@ -29,8 +29,8 @@ option_list <- list(
   make_option(c("--output_dir"),             type = "character", default = ".",
               help = "Directory for output CSVs [default: .]"),
   # Filtering / grouping
-  make_option(c("--which_level"),            type = "character", default = "Otus",
-              help = "Taxonomy level to aggregate to [default: Otus]"),
+  make_option(c("--taxon_rank"),            type = "character", default = "Feature",
+              help = "Taxonomy level to aggregate to [default: Feature]"),
   make_option(c("--label"),                  type = "character", default = "Hypothesis1",
               help = "Label prefix for output files [default: Hypothesis1]"),
   make_option(c("--min_library_size"),       type = "integer",   default = 5000L,
@@ -120,21 +120,25 @@ source(loader_path)
 tax_tbl <- if (nzchar(opt$taxonomy_table) && file.exists(opt$taxonomy_table)) opt$taxonomy_table else NULL
 ft <- load_feature_table(opt$feature_table, opt$input_format, tax_tbl)
 abund_table_full <- ft$abund_table   # samples x features
-OTU_taxonomy     <- ft$OTU_taxonomy
+feature_taxonomy     <- ft$feature_taxonomy
 
 message(sprintf("[lm_coda_glmnet] Feature table: %d samples x %d features",
                 nrow(abund_table_full), ncol(abund_table_full)))
 
-meta_table <- read.csv(opt$meta_table, header = TRUE, row.names = 1, check.names = FALSE)
+meta_table <- local({
+  sep <- if (grepl("\t", readLines(opt$meta_table, n = 1, warn = FALSE))) "\t" else ","
+  read.table(opt$meta_table, header = TRUE, sep = sep, row.names = 1,
+             check.names = FALSE, stringsAsFactors = FALSE)
+})
 
 # ---------------------------------------------------------------------------
 # Aggregate to requested taxonomy level
 # ---------------------------------------------------------------------------
-which_level <- opt$which_level  # e.g. "Otus", "Genus", "Family", ...
+taxon_rank <- opt$taxon_rank  # e.g. "Feature", "Genus", "Family", ...
 
-if (which_level != "Otus" && which_level %in% colnames(OTU_taxonomy)) {
-  message("[lm_coda_glmnet] Aggregating to level: ", which_level)
-  level_labels <- OTU_taxonomy[[which_level]]
+if (taxon_rank != "Feature" && taxon_rank %in% colnames(feature_taxonomy)) {
+  message("[lm_coda_glmnet] Aggregating to level: ", taxon_rank)
+  level_labels <- feature_taxonomy[[taxon_rank]]
   level_labels[level_labels == "" | is.na(level_labels)] <- "Unknown"
   # Sum counts per level label
   unique_labels <- unique(level_labels)
@@ -145,9 +149,9 @@ if (which_level != "Otus" && which_level %in% colnames(OTU_taxonomy)) {
   }, numeric(nrow(abund_table_full)))
   rownames(agg_mat) <- rownames(abund_table_full)
   abund_table_full <- agg_mat
-} else if (which_level != "Otus") {
-  message("[lm_coda_glmnet] Warning: which_level '", which_level,
-          "' not found in taxonomy; using Otus (no aggregation)")
+} else if (taxon_rank != "Feature") {
+  message("[lm_coda_glmnet] Warning: taxon_rank '", taxon_rank,
+          "' not found in taxonomy; using Feature level (no aggregation)")
 }
 
 # ---------------------------------------------------------------------------

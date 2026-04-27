@@ -2,7 +2,7 @@
 # Loads a feature table from BIOM, TSV, or GTDB format.
 # Returns a list with:
 #   $abund_table   - samples x features matrix (numeric)
-#   $OTU_taxonomy  - data.frame with columns Kingdom,Phylum,Class,Order,Family,Genus,Otus
+#   $feature_taxonomy  - data.frame with columns Kingdom,Phylum,Class,Order,Family,Genus,Feature
 
 suppressPackageStartupMessages({
   library(phyloseq)
@@ -36,7 +36,7 @@ suppressPackageStartupMessages({
   # pad to 7 ranks
   length(parts) <- 7
   parts[is.na(parts)] <- ""
-  names(parts) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Otus")
+  names(parts) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Feature")
   parts
 }
 
@@ -77,7 +77,7 @@ suppressPackageStartupMessages({
 
   list(
     abund_table  = abund_table[, keep, drop = FALSE],
-    OTU_taxonomy = tax_df[keep, , drop = FALSE]
+    feature_taxonomy = tax_df[keep, , drop = FALSE]
   )
 }
 
@@ -100,7 +100,7 @@ suppressPackageStartupMessages({
   tax_df  <- as.data.frame(tax_raw, stringsAsFactors = FALSE)
 
   # Rename columns to standard names and strip QIIME2 prefixes
-  col_names <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Otus")
+  col_names <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Feature")
   if (ncol(tax_df) >= 7) {
     colnames(tax_df)[1:7] <- col_names[1:7]
   } else {
@@ -116,7 +116,7 @@ suppressPackageStartupMessages({
     tax_df[[cn]] <- .strip_qiime2_prefixes(tax_df[[cn]])
   }
 
-  list(abund_table = abund_mat, OTU_taxonomy = tax_df)
+  list(abund_table = abund_mat, feature_taxonomy = tax_df)
 }
 
 # ---------------------------------------------------------------------------
@@ -142,7 +142,7 @@ suppressPackageStartupMessages({
   abund_mat <- as.matrix(raw)
   storage.mode(abund_mat) <- "numeric"
 
-  col_names <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Otus")
+  col_names <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Feature")
 
   # Parse taxonomy table if provided
   if (!is.null(taxonomy_table) && nchar(taxonomy_table) > 0 && file.exists(taxonomy_table)) {
@@ -177,7 +177,7 @@ suppressPackageStartupMessages({
         Order   = character(length(feat_ids)),
         Family  = character(length(feat_ids)),
         Genus   = character(length(feat_ids)),
-        Otus    = feat_ids,
+        Feature = feat_ids,
         stringsAsFactors = FALSE
       )
       rownames(tax_df) <- feat_ids
@@ -188,8 +188,8 @@ suppressPackageStartupMessages({
     }
 
   } else {
-    # No taxonomy table: use feature IDs as Otus, leave other ranks blank
-    message("[load_feature_table] No taxonomy table provided; using feature IDs as Otus column")
+    # No taxonomy table: use feature IDs as Feature, leave other ranks blank
+    message("[load_feature_table] No taxonomy table provided; using feature IDs as Feature column")
     feat_ids <- colnames(abund_mat)
     tax_df <- data.frame(
       Kingdom = rep("", length(feat_ids)),
@@ -198,13 +198,13 @@ suppressPackageStartupMessages({
       Order   = rep("", length(feat_ids)),
       Family  = rep("", length(feat_ids)),
       Genus   = rep("", length(feat_ids)),
-      Otus    = feat_ids,
+      Feature = feat_ids,
       stringsAsFactors = FALSE
     )
     rownames(tax_df) <- feat_ids
   }
 
-  list(abund_table = abund_mat, OTU_taxonomy = tax_df)
+  list(abund_table = abund_mat, feature_taxonomy = tax_df)
 }
 
 # ---------------------------------------------------------------------------
@@ -226,9 +226,9 @@ load_feature_table <- function(feature_table,
   )
 
   # Apply common taxonomy filters (only when we actually have taxonomy)
-  has_taxonomy <- any(result$OTU_taxonomy$Kingdom != "" & !is.na(result$OTU_taxonomy$Kingdom))
+  has_taxonomy <- any(result$feature_taxonomy$Kingdom != "" & !is.na(result$feature_taxonomy$Kingdom))
   if (has_taxonomy) {
-    result <- .filter_taxonomy(result$abund_table, result$OTU_taxonomy)
+    result <- .filter_taxonomy(result$abund_table, result$feature_taxonomy)
   }
 
   message(sprintf(

@@ -70,7 +70,11 @@ dir.create(opt$output_dir, recursive = TRUE, showWarnings = FALSE)
 # ---------------------------------------------------------------------------
 # Load metadata
 # ---------------------------------------------------------------------------
-meta_table <- read.csv(opt$meta_table, header = TRUE, row.names = 1, check.names = FALSE)
+meta_table <- local({
+  sep <- if (grepl("\t", readLines(opt$meta_table, n = 1, warn = FALSE))) "\t" else ","
+  read.table(opt$meta_table, header = TRUE, sep = sep, row.names = 1,
+             check.names = FALSE, stringsAsFactors = FALSE)
+})
 
 # ---------------------------------------------------------------------------
 # Load dependent variable
